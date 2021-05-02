@@ -16,6 +16,8 @@ function table.reduce(tbl, func, val)
 engine.name = 'Thebangs'
 thebangs = include('../thebangs/lib/thebangs_engine')
 
+local Formatters=require 'formatters'
+
 MusicUtil = require "musicutil"
 scale_names = {}
 
@@ -26,6 +28,9 @@ lattice = require("lattice")
 
 trck_one_pattern = nil
 trck_two_pattern = nil
+
+-- make sure random is fresh
+math.randomseed(os.time())
 
 tracks = {
   {0,1,0,1, 0,1,0,1,  0,1,0,1, 0,1,0,1},
@@ -147,7 +152,8 @@ function track_advance(trck_no)
     end
   else
     --Implements a simple shift register with input
-    table.insert(track,1,track[16])
+    --TODO allow input switch between various outputs and random
+    table.insert(track,1,math.random(0,1)) --track[16])
     table.remove(track,17)
   end
 end
@@ -183,28 +189,46 @@ end
 function key()
 end
 
+function draw_counter_reg(track, y_pos)
+  for otpt = 1,15,2 do
+    screen.level(tracks[track][otpt] == 1 and 15 or 1)
+    screen.rect((otpt*6-4),y_pos+1,4,2)
+    screen.fill()
+    
+    screen.level(2)
+    screen.rect((otpt*6-4),y_pos+1,4,2)
+    screen.stroke()
+  end
+  for otpt = 2,16,2 do
+    screen.level(tracks[track][otpt] == 1 and 13 or 1)
+    
+    screen.move((otpt*6-4)+2,y_pos-2)
+    screen.rect((otpt*6-4)+1,y_pos,2,4)
+    screen.fill()
+    
+    screen.level(2)
+    screen.move((otpt*6-4)+2,y_pos-2)
+    screen.rect((otpt*6-4)+1,y_pos,2,4)
+    screen.stroke()
+  end
+end
+
+function draw_shift_reg(track, y_pos)
+  for otpt = 1,16 do
+    screen.level(tracks[track][otpt] == 1 and 15 or 1)
+    screen.rect((otpt*6-4),y_pos,4,4)
+    screen.fill()
+    screen.level(2)
+    screen.rect((otpt*6-4),y_pos,4,4)
+    screen.stroke()
+  end
+end
+
 function redraw()
   screen.clear()
   
-  screen.level(2)
-  
-  for otpt = 1,16 do
-    screen.level(tracks[1][otpt] == 1 and 15 or 1)
-    screen.rect((otpt*6-4),6,4,4)
-    screen.fill()
-    screen.level(2)
-    screen.rect((otpt*6-4),6,4,4)
-    screen.stroke()
-  end
-  
-  for otpt = 1,16 do
-    screen.level(tracks[2][otpt] == 1 and 15 or 1)
-    screen.rect((otpt*6-4),54,4,4)
-    screen.fill()
-    screen.level(2)
-    screen.rect((otpt*6-4),54,4,4)
-    screen.stroke()
-  end
+  draw_counter_reg(1, 6)
+  draw_shift_reg(2,54)
   
   -- TODO use tones label
   for i,tone in ipairs(tones) do
@@ -283,7 +307,66 @@ function draw_tone_menu_arrow(i,tone)
 end
 
 function setup_params()
+  track_modes = {'counter','shift register'}
   
+  params:add_group('track 1', 1)
+  params:add{type = "option", id = "track1_mode", name = "mode",
+    options = track_modes, default = 1,
+    action = function(mode) end}
+  
+  params:add_group('track 2', 1)
+  params:add{type = "option", id = "track2_mode", name = "mode",
+    options = track_modes, default = 2,
+    action = function(mode) end}
+  
+  params:add_group('tones', 6)
+  local tone_freq=controlspec.new(40,18000,'exp',0,18000,'Hz')
+  params:add {
+    type='control',
+    id='tone_a',
+    name='Tone A',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  params:add {
+    type='control',
+    id='tone_b',
+    name='Tone B',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  params:add {
+    type='control',
+    id='tone_c',
+    name='Tone C',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  params:add {
+    type='control',
+    id='tone_d',
+    name='Tone D',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  params:add {
+    type='control',
+    id='tone_e',
+    name='Tone E',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  params:add {
+    type='control',
+    id='tone_f',
+    name='Tone F',
+    controlspec=tone_freq,
+    formatter=Formatters.tone_freq
+  }
+  
+  
+  params:add{type = "option", id = "tone_mode", name = "tone mode",
+    options = {'SUM','ADV'}, default = 1}
   params:add{type = "option", id = "scale_mode", name = "scale mode",
     options = scale_names, default = 11,
     action = function() build_scale() end}
